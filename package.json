@@ -1,0 +1,46 @@
+{
+  "name"           : "expresso",
+  "author"         : "Vandernorth <info@vandernorth.net>",
+  "description"    : "An express base-layer",
+  "version"        : "1.0.0",
+  "contributors"   : [
+    {
+      "name" : "Jeffrey van Norden",
+      "email": "jeffreyvannorden@gmail.com"
+    }
+  ],
+  "scripts"        : {
+    "start": "node bin/index.js",
+    "test" : "node test/run.js"
+  },
+  "main"           : "bin/index.js",
+  "repository"     : {
+    "type": "git",
+    "url" : "git://github.com/vandernorth/node-expresso.git"
+  },
+  "dependencies"   : {
+    "basic-auth"               : "^1",
+    "body-parser"              : "^1",
+    "connect-mongodb-session"  : "^1",
+    "cookie-parser"            : "^1",
+    "express"                  : "^4",
+    "express-request-id"       : "^1",
+    "express-session"          : "^1",
+    "express-socket.io-session": "^1",
+    "express-handlebars"       : "^3",
+    "ip"                       : "^1",
+    "less"                     : "^2",
+    "lodash"                   : "^4",
+    "moment"                   : "^2",
+    "mongoose"                 : "^4",
+    "sanitize-filename"        : "^1",
+    "socket.io"                : "^1"
+  },
+  "devDependencies": {
+    "bunyan": "*"
+  },
+  "license"        : "MIT",
+  "engines"        : {
+    "node": ">=6.3.0"
+  }
+}
