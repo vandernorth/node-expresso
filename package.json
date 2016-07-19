@@ -1,8 +1,8 @@
 {
   "name"           : "expresso-server",
-  "author"         : "Vandernorth <info@vandernorth.net>",
+  "author"         : "Grexxboxx <info@grexx.net>",
   "description"    : "An express base-layer",
-  "version"        : "1.0.0",
+  "version"        : "1.0.1",
   "contributors"   : [
     {
       "name" : "Jeffrey van Norden",

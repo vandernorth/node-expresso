@@ -4,6 +4,7 @@ const _            = require('lodash'),
       http         = require('http'),
       express      = require('express'),
       addRequestId = require('express-request-id')(),
+      bodyParser   = require('body-parser'),
       session      = require('express-session'),
       mongoose     = require('mongoose'),
       cookieParser = require('cookie-parser'),
@@ -14,18 +15,20 @@ const _            = require('lodash'),
 class Expresso extends EventEmitter {
 
     /**
-     * @param {object} config                               Configuration for this instance
-     * @param {number} config.port                          HTTP port to listen on
-     * @param {bunyan} config.logger                        Bunyan logger
-     * @param {string} [config.loggerContext]               Logger context. Defaults to HTTP
-     * @param {string} config.sessionsEnabled               Set to false to turn session off. Defaults to true
-     * @param {string} config.sessionSecret                 Session cookie secret
-     * @param {string} config.sessionName                   Session cookie name
-     * @param {string} config.sessionCollection             Session collection
-     * @param {string} config.handlebarLayoutDir            Handlebars layout directory
-     * @param {string} config.handlebarTemplateDir          Handlebars template directory
-     * @param {string} config.databaseConnectionString      MongoDB connectionString
-     * @param {string} config.databaseReplicaSet            MongoDB replica set name
+     * @param {object}  config                               Configuration for this instance
+     * @param {number}  config.port                          HTTP port to listen on
+     * @param {bunyan}  config.logger                        Bunyan logger
+     * @param {string}  [config.loggerContext]               Logger context. Defaults to HTTP
+     * @param {string}  config.sessionsEnabled               Set to false to turn session off. Defaults to true
+     * @param {string}  config.sessionSecret                 Session cookie secret
+     * @param {string}  config.sessionName                   Session cookie name
+     * @param {string}  config.sessionCollection             Session collection
+     * @param {string}  config.handlebarLayoutDir            Handlebars layout directory
+     * @param {string}  config.handlebarTemplateDir          Handlebars template directory
+     * @param {string}  config.databaseConnectionString      MongoDB connectionString
+     * @param {string}  config.databaseReplicaSet            MongoDB replica set name
+     * @param {boolean} config.contentSecurity               Enable / disable CSP-header
+     * @param {object}  config.contentSecurityPolicy         Your content security policy
      *
      */
     constructor( config ) {
@@ -34,8 +37,10 @@ class Expresso extends EventEmitter {
         this._config = config;
         this.enableLogger();
         this.startHttpServer();
+        this.contentSecurity();
         this.setSessions();
         this.setLogging();
+
     }
 
     enableLogger() {
@@ -61,6 +66,53 @@ class Expresso extends EventEmitter {
         this._express.set('x-powered-by', false);
         this._express.listen(this.config.port);
         this.handleServerError();
+    }
+
+    contentSecurity() {
+
+        if ( this.config.contentSecurity === false ) {
+            return false;
+        }
+
+        var generate = ( domain ) => {
+            var httpDomain            = (domain === 'localhost') ? 'http://' + domain : 'https://' + domain,
+                wssDomain             = (domain === 'localhost') ? 'ws://' + domain : 'wss://' + domain,
+                inGoogleWeTrust       = "https://*.googleapis.com https://*.google-analytics.com https://*.googlecode.com https://*.gstatic.com https://*.google.com https://*.youtube.com https://*.ytimg.com",
+                contentSecurityPolicy = {
+                    'default-src': ["'self'", "data:", httpDomain, inGoogleWeTrust],
+                    'script-src':  ["'self'", "'unsafe-inline'", httpDomain, inGoogleWeTrust],
+                    'style-src':   ["'self'", "'unsafe-inline'", httpDomain, "https://fonts.googleapis.com", inGoogleWeTrust],
+                    'img-src':     ["'self'", "data:", httpDomain, "https://secure.gravatar.com", inGoogleWeTrust],
+                    'connect-src': ["'self'", wssDomain, inGoogleWeTrust],
+                    'font-src':    ["'self'", "data:", httpDomain, "https://themes.googleusercontent.com", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+                    'report-uri':  ["/report"]
+                };
+
+            contentSecurityPolicy = _.merge({}, contentSecurityPolicy, this.config.contentSecurityPolicy);
+
+            contentSecurityPolicy = _(contentSecurityPolicy)
+                .mapValues(r => r.join(' '))
+                .map(( value, key ) => `${key} ${value};`)
+                .value()
+                .join('');
+
+            return contentSecurityPolicy;
+        };
+
+        this._express.use(( req, res, next ) => {
+            //== Firefox 23+, Chrome 25+
+            res.set('Content-Security-Policy', generate(req.hostname));
+            //== IE10+
+            res.set('X-Content-Security-Policy', generate(req.hostname));
+            next();
+        });
+
+        this._express.post('/report', bodyParser.json({
+            type: ['json', 'application/csp-report']
+        }), ( req, res ) => {
+            req.log.warn(req.body, 'CSP Report');
+            res.end('{}');
+        });
     }
 
     handleServerError() {
