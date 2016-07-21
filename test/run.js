@@ -27,7 +27,6 @@ const Expresso      = require('../bin/index'),
           handlebarTemplateDir:     __dirname + '/views',
           databaseConnectionString: 'mongodb://localhost:27017/sessionStore',
           contentSecurity:          true
-
       },
       expresso      = new Expresso(config);
 
